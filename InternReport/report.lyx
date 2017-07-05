@@ -119,6 +119,68 @@ target "https://www.xilinx.com/support/documentation/sw_manuals/xilinx2017_2/ug9
  simpler functions to remove handshaking if redundant.
 \end_layout
 
+\begin_layout Standard
+Now to understand DATAFLOW and other pragmas with a bigger picture, I looked
+ at a code of 
+\begin_inset Quotes eld
+\end_inset
+
+cubicspline
+\begin_inset Quotes erd
+\end_inset
+
+ which evaluates a polynomial in three variables and degree 9.
+ The dataflow diagram for the 
+\begin_inset Quotes eld
+\end_inset
+
+cubicspline
+\begin_inset Quotes erd
+\end_inset
+
+ example is shown below :
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /home/sumit/Desktop/a5.png
+	scale 30
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Dataflow diagram of synthesized HDL of cubicspline with DATAFLOW pragma
+ specified in the top level function
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
 \begin_layout Section
 HLS provides 
 \begin_inset Quotes eld
@@ -260,7 +322,7 @@ Example of II specification being neglected by HLS
 \end_layout
 
 \begin_layout Section
-DATAFLOW pragma
+DATAFLOW pragma and how its different from PIPELINE
 \end_layout
 
 \begin_layout Standard
