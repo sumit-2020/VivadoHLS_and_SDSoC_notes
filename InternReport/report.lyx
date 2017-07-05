@@ -1,0 +1,1722 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Report of experience with Vivado HLS and SDSoC in the summer internship
+ at IIT Bombay
+\end_layout
+
+\begin_layout Author
+Sumit Kumar Yadav
+\end_layout
+
+\begin_layout Date
+22 May - 8 July, 2017
+\end_layout
+
+\begin_layout Standard
+Past Experience : Worked with Xilinx ISE to design hardware by coding in
+ Verilog
+\end_layout
+
+\begin_layout Standard
+I arrived at IIT Bombay on 22nd May,2017 and was alloted a room in Tansa
+ House.
+ I first got familiarized with the campus and the High Performance Computing
+ Lab in the EE Deptt.
+ I got an idea of why verilog is not a good language to code large designs
+ involving algorithms etc.
+ fastly and thus the need for resorting to a high level language for hardware
+ description.
+ I got to know of Vivado HLS, a tool that can generate verilog/vhld files
+ for a C/C++ description.
+ Various pragmas/directives are used to direct HLS synthesize the C/C++
+ description to a sought for verilog/vhdl description.
+ I started by getting familiar with the HLS environment and design flow
+ from the HLS User Guide 
+\begin_inset CommandInset href
+LatexCommand href
+target "https://www.xilinx.com/support/documentation/sw_manuals/xilinx2017_2/ug902-vivado-high-level-synthesis.pdf"
+
+\end_inset
+
+ .
+ Then I started with creating small examples of addition/multiplicaton and
+ experimenting with the various pragmas.
+ After that I experimented with the behaviour of loops and the pragmas related
+ to them.
+ Then I tried understanding how function calls are made and what is the
+ effect of various pragmas on behaviour of function hardware.
+ I went on to see the interfaces that are generated for function arguments.
+ I also tried replacing the default handshake interfaces by ap_none for
+ simpler functions to remove handshaking if redundant.
+\end_layout
+
+\begin_layout Section
+HLS provides 
+\begin_inset Quotes eld
+\end_inset
+
+any precision
+\begin_inset Quotes erd
+\end_inset
+
+ libraries
+\end_layout
+
+\begin_layout Standard
+When you need to use a random precision like 13-bit integers in your hardware,
+ using standard 32-bit integers will waste resources.
+ HLS provides you libraries to use any pecision integers(ap_int.h), half
+ floats etc.
+ which save a lot of hardware resources while synthesizing.
+\end_layout
+
+\begin_layout Section
+Use HLS math library instead of standard C/C++ math libraries
+\end_layout
+
+\begin_layout Standard
+The HLS math functions are implemented as synthesizable bit-approximate
+ functions from the hls_math.h library.
+ Bit-approximate HLS math library functions do not provide the same accuracy
+ as the standard C function.
+ To achieve the desired result, the bit-approximate implementation may use
+ a different underlying algorithm than the standard C math library version.
+ So, while checking for errors during C-RTL Co-simulation, make sure that
+ you use 
+\begin_inset Quotes eld
+\end_inset
+
+hls_math.h
+\begin_inset Quotes erd
+\end_inset
+
+ so that the inherent error doesn't creep in error calculations.
+ Thiis can easily be seen with sin() or log() functions.
+\end_layout
+
+\begin_layout Section
+HLS doesn't check/optimize for cross function hardware redundancies
+\end_layout
+
+\begin_layout Standard
+If you strictly want a function to be instantiated more than once without
+ HLS deciding how many instances of the function to create, you can use
+ the HLS PIPELINE pragma with premeditated II(Initiation Interval) to direct
+ HLS.
+ In some cases where you don't get the hardware you want even with pragmas,
+ you can explicitly write many functions with different names but same definitio
+ns.
+ For eg.
+ pe0(),pe1(),pe2(),pe3() etc.
+ all with the body of pe().
+\end_layout
+
+\begin_layout Standard
+HLS doesnot look for cross function redundancies and thus creates seperate
+ hardware instances.
+ Now you can get the hardware design you want easily.
+\end_layout
+
+\begin_layout Section
+II indications are not strictly followed(if smaller II is acheivable)
+\end_layout
+
+\begin_layout Standard
+If you try pipeling a function in HLS by specifying some II(say 16) but
+ the function can be implemented with a smaller II(say 1), HLS will ignore
+ your II directive and synthesize the function with II=1.
+ If you deliberately want this to be 16(or something) you can direct HLS
+ to do so by restricting resources via necessary pragmas.
+ Anyways, the question is why do you want a particular II ? If you are planning
+ so just for matching with the following function's II in the flow which
+ will take the result of this function as arguments, don't try to do so
+ unless you care of resource utilization.
+ But, If the following function works at some high II, then you can always
+ try to increase the preceeding function's II and reduce resource utilization
+ instead of letting it do all calculations in parallel within a few cycles
+ and then sitting idle waiting for the other function to need its results.
+ 
+\end_layout
+
+\begin_layout Standard
+Even after this, if you want a function to be of a particular latency and
+ II without really using resource restrictions to shape the latency and
+ II, you can tell HLS to implement it with a particular latency by using
+ the latency directive.
+ Now, if you direct HLS to synthesize with a larger latency than required,
+ the calculations will still happen in only a few cycles that are actually
+ needed and some dummy states will be added before them to give you your
+ required latency.
+ The required pragma here is : #pragma HLS LATENCY min=16 max=16 (this will
+ give you a strict latency of 16 even without any resource restrictions)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /home/sumit/Documents/HLSInternReport/II_not_strict/screenshots/Screenshot from 2017-06-23 11-02-13.png
+	scale 40
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename /home/sumit/Documents/HLSInternReport/II_not_strict/screenshots/Screenshot from 2017-06-23 11-03-32.png
+	scale 40
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Example of II specification being neglected by HLS 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+DATAFLOW pragma
+\end_layout
+
+\begin_layout Standard
+Dataflow pragma is commonly used to parallelize a flow of functions which
+ are in a dataflow.
+ Say two functions f1 and f2 are in a dataflow.
+ The pragma will establish a fifo data connection between the two functions
+ so that the f2 can start working on some of the data produced by f1 while
+ f1 still functioning to produce rest of the data.
+ This behaviour lets data 
+\begin_inset Quotes eld
+\end_inset
+
+seep
+\begin_inset Quotes erd
+\end_inset
+
+ into a design rather than being passed on in batches(the default behaviour
+ of C/C++) from one function to another.
+ Now this directive is different from pipeling as it lets a batch of data
+ seep in a design to produce output from the last function in dataflow but
+ doesn't allow to pump in new batches in the flow from top until the final
+ output corrsponding to earlier input is produced by the last function in
+ design flow.
+ This pragma does parallelizes processing but not completely.
+\end_layout
+
+\begin_layout Section
+Results can't be streamed out of any argument of a function in a single
+ call.
+ 
+\end_layout
+
+\begin_layout Standard
+By the definition of a function in C++, functions can't keep changing their
+ pass by reference arguments or return values in a single call while you
+ are reading them in the caller function.
+ This can prove to be a drawback while using C or C++ for describing hardware
+ using HLS tools.
+ There may be some situations where you want to create some hardware which
+ continuously takes input and streams output.
+ Although there is a trick for implementing this, you need to write the
+ function calls in a loop and make sure that only one instance of the function
+ is created in hardware.
+ Then use pipeline directive in the top function.
+ What it does essentially is create extra hardware(proportional to loop
+ count) implementing MUXes at the input of the first function in dataflow
+ and sending different inputs as required in the loop iterations by selecting
+ from the inputs from the MUX.
+ Although this may do your job for small loop counts but this trick is quite
+ inefficient for large loop counts as extra hardware is created per extra
+ loop count thus wasting resources and decreasing the clock frequency significan
+tly.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /home/sumit/Documents/HLSInternReport/Function_stream_outputs/screenshots/2
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename /home/sumit/Documents/HLSInternReport/Function_stream_outputs/screenshots/3
+	scale 35
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename /home/sumit/Documents/HLSInternReport/Function_stream_outputs/screenshots/4.png
+	scale 33
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Using a loop to achieve streaming output from a function instance in hardware:
+ 1.
+ DATAFLOW pragma 2.
+ PIPELINE pragma (the trick !)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Datamovers in SDSoC
+\end_layout
+
+\begin_layout Standard
+\align block
+To transfer data between PL(programmable logic) and DDR3(or any external
+ memory), various datamovers can be used depending on the type and size
+ of arguments of the hardware function.
+ If the argument is small enough, it is firstly copied to a register or
+ BRAM in PL via AXI and then further used.
+ But if the argument is quite large(eg a large sized array), the user needs
+ to specify pragmas like zero_copy or SEQUENTIAL access to form a streaming
+ interface implemented by AXI_MASTER/AXI_SIMPLE/AXI_SCATTER-GATHER depending
+ on the type of allocation(paged or contiguous).
+ Using malloc() to allocate memory for an array may lead to a large number
+ of page changes and other overheads while memory allocated by sds_alloc()
+ is mostly on page boundaries and thus overheads are reduced.
+ Thus, a sequential acces on an array allocated with sds_alloc() can be
+ implemented with AXI_SIMPLE whereas the same array, if allocated using
+ malloc(), uses AXI_SCATTER-GATHER.
+ The following table shows the datamover implementation behaviour of SDSoC
+ while implementing a function which simply copies a float array to another
+ array using a hardware implemented function.
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="11" columns="5">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Size
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Allocation
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Pragma
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Estimated H/W cycles
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Generated Interface
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+44876
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+AXI_ACP:AXIDMA_SG
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+malloc()
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+zero_copy
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+105191
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+AXI_ACP:AXIMM:0xC
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2000
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+SEQUENTIAL
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+88010
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+AXI_ACP:AXIDMA_SG
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+59261
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+AXI_ACP:AXIDMA_SIMPLE
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+sds_alloc()
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+zero_copy
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+58185
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+AXI_ACP:AXIMM:0xC
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+SEQUENTIAL
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+19284
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+AXI_ACP:AXIDMA_SIMPLE
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+malloc()
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+zero_copy
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1046951
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+AXI_ACP:AXIMM:0xC
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+20000
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+SEQUENTIAL
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+364785
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+AXI_ACP:AXIDMA_SG
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+sds_alloc()
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+zero_copy
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+537753
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+AXI_ACP:AXIMM:0xC
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+SEQUENTIAL
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+139252
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+AXI_ACP:AXIDMA_SIMPLE
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Datamover dependence of a float array copying H/Wfunction on size, allocation
+ and access pattern.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+It is very clear that the bandwidth that can provided by the AXI from off
+ chip memory to PL proves to be the most critical bottleneck in any implementati
+on on SoC's like zedboard etc.
+\end_layout
+
+\begin_layout Section
+Measuring performance with programs involving r/w from RAM
+\end_layout
+
+\begin_layout Standard
+Reading and writing from RAM(DDR3) present on the zedboard or any other
+ SoC board is not completely deterministic at higher levels.
+ This variation in performance comes into picture due to many factors including
+ allocation strategy (random, paged or contiguous), and the random distribution
+ of data in the RAM leading to uneven access times.
+ Best is to run the program for a large number of times and take an average
+ of the execution times.
+\end_layout
+
+\begin_layout Section
+RAM read and write latencies for various cases.
+\end_layout
+
+\begin_layout Standard
+I many hardware designs, external memory accesses prove to be the bottleneck
+ in performance and thus, it is very critical to analyze the data access
+ of external memory from a Programmable Logic(PL) IP.
+ I wrote a simple memory copying function : memcpy() which simply copies
+ contents of an array to another array.
+ The only arguments are the arrays and a for loop does the copying.
+ First of all, the arguments to memcpy() should be arrays and not just pointers
+ so that the depth is known to the function at compile time.
+ The variuos ways to carry out this copying are discussed below :
+\end_layout
+
+\begin_layout Subsection
+Using sds_zerocopy() pragma
+\end_layout
+
+\begin_layout Standard
+This pragma specifies that the array should be shared by both software and
+ hardware without any copying.
+ This directs SDSoC to build a AXI_ACP:AXIMM (AXI Master) Interface which
+ can be visible in the block diagram.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /home/sumit/Desktop/screenreport/memcpyzerocopybig.png
+	scale 44
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Block diagram for AXI Master used for array copying
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For copying 1000 ap_uint<32> elements, 2.60 H/W cycles per copy was achieved
+ which improved to 2.01 for 100000 elements on an average.
+ As the performance is saturated at around 2 cycles per copy, this is not
+ a good way for simply copying array elements.
+\end_layout
+
+\begin_layout Subsection
+Using HLS ap_fifo or SDS SEQUENTIAL access pragma
+\end_layout
+
+\begin_layout Standard
+This pragma directs HLS that both the arrays will be FIFO's and as no other
+ pragma is given to SDSoC, they are implemented as AXI_SIMPLE interfaces
+ as visible in the block diagram.
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /home/sumit/Desktop/screenreport/memcpyfifo.png
+	scale 35
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Block diagram for AXI SIMPLE used for array copying
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+For copying 1000 ap_uint<32> elements, 1.9 H/W cycles per copy was achieved
+ which improved to 1.17 for 100000 elements on an average.
+ The best performance in 100000 iterations was 1.09 clock cycles per copy.
+ Building with HLS SEQUENTIAL access pragma also generates similar hardware
+ and shows similar performance.
+\end_layout
+
+\begin_layout Section
+Managing GPIO from software
+\end_layout
+
+\begin_layout Standard
+While using SoC boards like zedboard etc., there may be some cases where
+ you want to read from or write to the general purpose input output pins
+ on the board such as LED's, switches, buttons etc.
+ to take some flow deciding inputs or using LED's to see progress in flow.
+ Usually these pins are directly managed by kernel modules but there is
+ an easy way to manage these pins also from user space.
+\end_layout
+
+\begin_layout Standard
+Standard Linux kernels have inside them, a special interface to allow access
+ to GPIO pins.
+ After executing kernel menuconfig you can easily verify whether this interface
+ is active in your kernel or not and in case, enable it.
+ The kernel tree path is the following:
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Device Drivers ---> GPIO Support ---> /sys/class/gpio/...
+ (sysfs interface)
+\end_layout
+
+\begin_layout Standard
+If not, enable this feature and recompile the kernel before continuing to
+ read.
+ The interface to allow working with GPIO is at the following filesystem
+ path:
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+/sys/class/gpio/
+\end_layout
+
+\begin_layout Standard
+If you want to work with a particular GPIO you must first reserve it, set
+ the input/output direction and start managing it.
+ Once you reserve the GPIO and finish to use it, you need to free it for
+ allowing other modules or processes to use it.
+ This rule is valid for both cases : use GPIO from kernel level or user
+ level.
+\end_layout
+
+\begin_layout Subsection
+Manage GPIO from command line or script
+\end_layout
+
+\begin_layout Standard
+From the user level side this "operation" for reserving the GPIO is called
+ "export".
+ For making this export operation, you simply need to echo the GPIO number
+ you are interested to a special path as follows (change XX with the GPIO
+ number you need):
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+echo XX > /sys/class/gpio/export
+\end_layout
+
+\begin_layout Standard
+If operation is successful (the possible case of operation failed is explained
+ below) a new "folder" will show up in the GPIO interface path as shown
+ below:
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+/sys/class/gpio/gpioXX/
+\end_layout
+
+\begin_layout Standard
+This new "folder" will allow you to work with the GPIO you just reserved.
+ In particular if you want to set the in/out direction you simply need to
+ execute the following echo commands:
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+echo "out" > /sys/class/gpio/gpioXX/direction
+\end_layout
+
+\begin_layout Standard
+or
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+echo "in" > /sys/class/gpio/gpioXX/direction
+\end_layout
+
+\begin_layout Standard
+In case you set 
+\begin_inset Quotes eld
+\end_inset
+
+out
+\begin_inset Quotes erd
+\end_inset
+
+ direction, you can directly manage the value of GPIO by executing additional
+ echo commands like:
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+echo 1 > /sys/class/gpio/gpioXX/value
+\end_layout
+
+\begin_layout Standard
+or
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+echo 0 > /sys/class/gpio/gpioXX/value
+\end_layout
+
+\begin_layout Standard
+The possible states allowed are high (1) and low (0).
+ In case you set 
+\begin_inset Quotes eld
+\end_inset
+
+in
+\begin_inset Quotes erd
+\end_inset
+
+ direction, you can read the current pin value by using the following command:
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+cat /sys/class/gpio/gpioXX/value
+\end_layout
+
+\begin_layout Standard
+Once finished to use your GPIO, you can free it by making the following
+ echo command :
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+echo XX > /sys/class/gpio/unexport
+\end_layout
+
+\begin_layout Standard
+If GPIO folder did not showed up after export operation, it is very likely
+ that the GPIO is already reserved by some module.
+ For verifying the current reserved GPIO map, you must first verify if your
+ kernel has the following feature enabled:
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Kernel configuration ---> Kernel hacking ---> Debug FS
+\end_layout
+
+\begin_layout Standard
+As usual, if not enabled, enable it and recompile the kernel.
+ The next step is to launch the following commands for mount debugfs:
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+mount -t debugfs none /sys/kernel/debug
+\end_layout
+
+\begin_layout Standard
+and dump the current GPIO configuration by using:
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+cat /sys/kernel/debug/gpio
+\end_layout
+
+\begin_layout Standard
+The output will show you the current list of reserved GPIOs.
+\end_layout
+
+\begin_layout Subsection
+Manage GPIO from an application(or simply C/C++) code
+\end_layout
+
+\begin_layout Standard
+Following short lines of C code show how the reproduce the same steps as
+ above (remember to change XX with the GPIO number you want to use).
+\end_layout
+
+\begin_layout Subsubsection
+Reserve (export) the GPIO:
+\end_layout
+
+\begin_layout Standard
+int fd;
+\end_layout
+
+\begin_layout Standard
+char buf[MAX_BUF];
+\end_layout
+
+\begin_layout Standard
+int gpio = XX;
+\end_layout
+
+\begin_layout Standard
+fd = open("/sys/class/gpio/export", O_WRONLY);
+\end_layout
+
+\begin_layout Standard
+sprintf(buf, "%d", gpio); 
+\end_layout
+
+\begin_layout Standard
+write(fd, buf, strlen(buf));
+\end_layout
+
+\begin_layout Standard
+close(fd);
+\end_layout
+
+\begin_layout Subsubsection
+Set the direction in the GPIO folder just created:
+\end_layout
+
+\begin_layout Standard
+sprintf(buf, "/sys/class/gpio/gpio%d/direction", gpio);
+\end_layout
+
+\begin_layout Standard
+fd = open(buf, O_WRONLY);
+\end_layout
+
+\begin_layout Standard
+// Set out direction write(fd, "out", 3); 
+\end_layout
+
+\begin_layout Standard
+// Set in direction write(fd, "in", 2); 
+\end_layout
+
+\begin_layout Standard
+close(fd);
+\end_layout
+
+\begin_layout Subsubsection
+In case of 
+\begin_inset Quotes eld
+\end_inset
+
+out
+\begin_inset Quotes erd
+\end_inset
+
+ direction, set the value of GPIO:
+\end_layout
+
+\begin_layout Standard
+sprintf(buf, "/sys/class/gpio/gpio%d/value", gpio);
+\end_layout
+
+\begin_layout Standard
+fd = open(buf, O_WRONLY);
+\end_layout
+
+\begin_layout Standard
+// Set GPIO high status write(fd, "1", 1); 
+\end_layout
+
+\begin_layout Standard
+// Set GPIO low status write(fd, "0", 1); 
+\end_layout
+
+\begin_layout Standard
+close(fd);
+\end_layout
+
+\begin_layout Subsubsection
+In case of 
+\begin_inset Quotes eld
+\end_inset
+
+in
+\begin_inset Quotes erd
+\end_inset
+
+ direction, get the current value of GPIO:
+\end_layout
+
+\begin_layout Standard
+char value;
+\end_layout
+
+\begin_layout Standard
+sprintf(buf, "/sys/class/gpio/gpio%d/value", gpio);
+\end_layout
+
+\begin_layout Standard
+fd = open(buf, O_RDONLY);
+\end_layout
+
+\begin_layout Standard
+read(fd, &value, 1);
+\end_layout
+
+\begin_layout Standard
+if(value == '0') { // Current GPIO status low } else { // Current GPIO status
+ high }
+\end_layout
+
+\begin_layout Standard
+close(fd);
+\end_layout
+
+\begin_layout Subsubsection
+Once finished, free (unexport) the GPIO: 
+\end_layout
+
+\begin_layout Standard
+fd = open("/sys/class/gpio/unexport", O_WRONLY);
+\end_layout
+
+\begin_layout Standard
+sprintf(buf, "%d", gpio);
+\end_layout
+
+\begin_layout Standard
+write(fd, buf, strlen(buf));
+\end_layout
+
+\begin_layout Standard
+close(fd);
+\end_layout
+
+\begin_layout Subsubsection
+
+\series bold
+NOTE
+\series default
+ : You have to keep this in mind if you plan to set or, more important,
+ get the value of a GPIO through this way in continous mode.
+ If you open the "value" file for getting the current GPIO status (1 or
+ 0) remember that, after the fist read operation, the file pointer will
+ move to the next position in the file.
+ Since this interface was made to be read from cat command, the returned
+ string will be terminated by the new line character (
+\backslash
+n).
+ This mean after the first "valid" read all the next read operation will
+ return always the last character in the file, in this case only the new
+ line '
+\backslash
+n'.
+ For obtaining a correct status value for each read operation you simply
+ have to set the file pointer at the beginning of the file before read by
+ using the command below:
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+lseek(fp, 0, SEEK_SET);
+\end_layout
+
+\begin_layout Standard
+You will not have this problem if you open and close GPIO value file every
+ time you need to read it, but such continuous read may introduce short
+ delays.
+ Since these short lines of codes are only an example if you want to use
+ them in your code remember to add control for error in opening the GPIO
+ file.
+\end_layout
+
+\begin_layout Section
+Changing/Tweaking verilog files generated in sdsoc build flow
+\end_layout
+
+\begin_layout Standard
+We may sometimes be unable to get the desired hardware that we want by writing
+ C/C++ code and using pragmas to direct HLS or SDSoC.
+ So as a last resort, you may feel the need to tweak the generated verilog
+ files or replace them with your (compatible) verilog files.
+ But in SDSoC build flow, sds++ calls vivado_hls to synthesize the C/C++
+ source files and generate coressponding verilog files and export this as
+ an IP.
+ Then the flow returns to sds++ to use this IP in the corresponding vivado
+ project formation and generating the .elf file(s).
+ 
+\end_layout
+
+\begin_layout Standard
+If we observe closely, sds++ generates a .tcl script with commands to include
+ C/C++ source files, synthesize the design and export it as an IP and passes
+ this .tcl file to vivado_hls as an argument.
+ 
+\series bold
+What we want to do is to somehow halt the vivado_hls action after synthesis
+ and before exporting, replace/tweak the generated verilog files, and then
+ let vivado_hls to continue exporting the IP and returning the flow to sds++.
+ 
+\end_layout
+
+\begin_layout Standard
+A 
+\begin_inset Quotes eld
+\end_inset
+
+trick
+\begin_inset Quotes erd
+\end_inset
+
+ to do this is to let sds++ call a script written by us named vivado_hls
+ instead of the original vivado_hls.
+ Now when this script is called (or the original vivado_hls that was meant
+ to be called), the .tcl to tell vivado_hls(or the original vivado_hls that
+ was meant to be called) what to do has already been generated.
+ So in our vivado_hls bash script, we replace this auto-generated .tcl by
+ our own .tcl(my.tcl).
+ This replaced .tcl(my.tcl) is almost similar to the auto-generated .tcl except
+ with a bash script(my_verilog_converter.sh) call to pause the flow for sometime
+ between csynth and export commands.
+\end_layout
+
+\begin_layout Standard
+The my_verilog_converter.sh simply creates a dummy file(halt.txt) and then
+ waits until that dummy file is deleted by the user.
+ While this scripts waits, you can tweak/replaced the synthesized verilog
+ files and then delete the dummy file(halt.txt) mannually and let the script
+ finish.
+ After this script finishes, flow is returned to my.tcl which proceeds to
+ export the design as an IP.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /home/sumit/Desktop/a5.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Exporting path to use custom vivado_hls script.
+ The exported Vivado_HLS directory here is merely a copy of the original
+ Vivado_HLS directory with the vivado_hls replaced by our custom script.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /home/sumit/Desktop/a1.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Our script named vivado_hls to mimic as original vivado_hls
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /home/sumit/Desktop/a2.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Original .tcl auto-generated by sds++ for vivado_hls
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /home/sumit/Desktop/a3.png
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+my.tcl which replaces auto-generated .tcl
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /home/sumit/Desktop/a4.png
+	scale 70
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+my_verilog_converter.sh which is called by my.tcl
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
