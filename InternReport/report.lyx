@@ -342,12 +342,12 @@ seep
 
  into a design rather than being passed on in batches(the default behaviour
  of C/C++) from one function to another.
- Now this directive is different from pipeling as it lets a batch of data
- seep in a design to produce output from the last function in dataflow but
- doesn't allow to pump in new batches in the flow from top until the final
- output corrsponding to earlier input is produced by the last function in
- design flow.
- This pragma does parallelizes processing but not completely.
+ The DATAFLOW optimization has no hierarchical implementation.
+ If a sub-function or loop contains additional tasks that might benefit
+ from the DATAFLOW optimization, you must apply the optimization to the
+ loop, the sub-function, or inline the sub-function.
+ This pragma can only be used in cases where data flow between functions
+ is unconditional and without any feedback.
 \end_layout
 
 \begin_layout Section
@@ -460,7 +460,7 @@ To transfer data between PL(programmable logic) and DDR3(or any external
  malloc(), uses AXI_SCATTER-GATHER.
  The following table shows the datamover implementation behaviour of SDSoC
  while implementing a function which simply copies a float array to another
- array using a hardware implemented function.
+ array using a function marked as H/W.
 \begin_inset Float table
 placement H
 wide false
