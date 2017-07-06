@@ -82,8 +82,8 @@ Sumit Kumar Yadav
 \end_layout
 
 \begin_layout Standard
-Past Experience : Worked with Xilinx ISE to design hardware by coding in
- Verilog
+Past Experience : Worked with Xilinx ISE to program logic in hardware by
+ coding in Verilog
 \end_layout
 
 \begin_layout Standard
@@ -179,6 +179,12 @@ Dataflow diagram of synthesized HDL of cubicspline with DATAFLOW pragma
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+So, if the largest II out of the functions in the flow is 16 cycles, you'll
+ get a design pipelined to give you an overall II of 16 cycles on the top
+ level function.
 \end_layout
 
 \begin_layout Section
@@ -366,7 +372,7 @@ By the definition of a function in C++, functions can't keep changing their
  continuously takes input and streams output.
  Although there is a trick for implementing this, you need to write the
  function calls in a loop and make sure that only one instance of the function
- is created in hardware.
+ is created in hardware by using resource pragmas if needed.
  Then use pipeline directive in the top function.
  What it does essentially is create extra hardware(proportional to loop
  count) implementing MUXes at the input of the first function in dataflow
@@ -435,6 +441,64 @@ Using a loop to achieve streaming output from a function instance in hardware:
 \end_inset
 
 
+\end_layout
+
+\begin_layout Section
+Implementing tensorCore (design 1) in HLS
+\end_layout
+
+\begin_layout Standard
+Design 1 in 
+\begin_inset CommandInset href
+LatexCommand href
+target "http://dspace.library.iitb.ac.in/xmlui/bitstream/handle/100/2071/FPGA%20based%20high%20performance%20.pdf?sequence=2"
+
+\end_inset
+
+ was implemented in HLS first and then the flow was parallelized using necessary
+ pragmas.
+ Note that functions with different names but same definitions are used(
+ pe0(), pe1(), pe2() etc..) instead of just one function ( pe() ) to prevent
+ HLS from using any cross function optimization and simply implement each
+ function as seperate hardware instance.
+ The working of all processing elements parallely can be seen in the following
+ analysis view figure.
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /home/sumit/Desktop/my1.png
+	scale 30
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Analysis view showing parallel working of all PEs
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+ 
 \end_layout
 
 \begin_layout Section
@@ -1144,7 +1208,27 @@ Block diagram for AXI SIMPLE used for array copying
 
 \end_inset
 
-For copying 1000 ap_uint<32> elements, 1.9 H/W cycles per copy was achieved
+Now a DMA is auto-generated for transfer of data b/w DDR and PL.
+ Now, the processor just has to direct the DMA to send 
+\begin_inset Quotes eld
+\end_inset
+
+this
+\begin_inset Quotes erd
+\end_inset
+
+ many contiguous bits starting from 
+\begin_inset Quotes eld
+\end_inset
+
+this
+\begin_inset Quotes erd
+\end_inset
+
+ location in the DDR and then mind his own work.
+ The processor thus doesn't come into play for every transfer and thus we
+ can expect faster transfer rates.
+ For copying 1000 ap_uint<32> elements, 1.9 H/W cycles per copy was achieved
  which improved to 1.17 for 100000 elements on an average.
  The best performance in 100000 iterations was 1.09 clock cycles per copy.
  Building with HLS SEQUENTIAL access pragma also generates similar hardware
@@ -1548,8 +1632,15 @@ Changing/Tweaking verilog files generated in sdsoc build flow
 \end_layout
 
 \begin_layout Standard
-We may sometimes be unable to get the desired hardware that we want by writing
- C/C++ code and using pragmas to direct HLS or SDSoC.
+We may sometimes be unable to get the desired hardware that
+\end_layout
+
+\begin_layout Standard
+00
+\end_layout
+
+\begin_layout Standard
+we want by writing C/C++ code and using pragmas to direct HLS or SDSoC.
  So as a last resort, you may feel the need to tweak the generated verilog
  files or replace them with your (compatible) verilog files.
  But in SDSoC build flow, sds++ calls vivado_hls to synthesize the C/C++
