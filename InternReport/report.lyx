@@ -1692,15 +1692,8 @@ Changing/Tweaking verilog files generated in sdsoc build flow
 \end_layout
 
 \begin_layout Standard
-We may sometimes be unable to get the desired hardware that
-\end_layout
-
-\begin_layout Standard
-00
-\end_layout
-
-\begin_layout Standard
-we want by writing C/C++ code and using pragmas to direct HLS or SDSoC.
+We may sometimes be unable to get the desired hardware that we want by writing
+ C/C++ code and using pragmas to direct HLS or SDSoC.
  So as a last resort, you may feel the need to tweak the generated verilog
  files or replace them with your (compatible) verilog files.
  But in SDSoC build flow, sds++ calls vivado_hls to synthesize the C/C++
