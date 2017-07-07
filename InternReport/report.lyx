@@ -1982,5 +1982,97 @@ create .bin
  Test this on a zedboard to confirm its working.
 \end_layout
 
+\begin_layout Part
+Some useful links :
+\end_layout
+
+\begin_layout Enumerate
+Vivado HLS Documentation and Guides - 
+\begin_inset CommandInset href
+LatexCommand href
+target "https://www.xilinx.com/support/documentation-navigation/design-hubs/dh0012-vivado-high-level-synthesis-hub.html"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+SDSoC Documentation and Guides - 
+\begin_inset CommandInset href
+LatexCommand href
+target "https://www.xilinx.com/products/design-tools/software-zone/sdsoc.html#documentation"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+SDSoC Platform Creation Support - 
+\begin_inset CommandInset href
+LatexCommand href
+target "https://www.xilinx.com/html_docs/xilinx2017_1/sdsoc_doc/topics/introduction/concept_sdsocpl_sdspfm_gui.html"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+SDSoC platforms and libraries guide - 
+\begin_inset CommandInset href
+LatexCommand href
+target "https://www.xilinx.com/support/documentation/sw_manuals/xilinx2016_2/ug1146-sdsoc-platforms-and-libraries.pdf"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+Petalinux Tools Documentation - 
+\begin_inset CommandInset href
+LatexCommand href
+target "https://www.xilinx.com/support/documentation/sw_manuals/petalinux2014_4/ug1156-petalinux-tools-workflow-tutorial.pdf"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+Zedboard master constraints file (.xdc) - 
+\begin_inset CommandInset href
+LatexCommand href
+target "https://github.com/Digilent/Zedboard/blob/master/Resources/XDC/zedboard_master.xdc"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+Zedboard led-demo - 
+\begin_inset CommandInset href
+LatexCommand href
+target "https://reference.digilentinc.com/learn/programmable-logic/tutorials/zedboard-led-demo/start"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+Sample zynq design from scratch - 
+\begin_inset CommandInset href
+LatexCommand href
+target "http://svenand.blogdrive.com/archive/175.html#.WV9tr2uGM8q"
+
+\end_inset
+
+
+\end_layout
+
 \end_body
 \end_document
